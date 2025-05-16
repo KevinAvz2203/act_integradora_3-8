@@ -10,11 +10,22 @@ class Observer(ABC):
 
 
 class Subscriber(Observer):
-    def __init__(self, name: str):
+    def __init__(self, name: str, gui=None):
         self.name = name
+        self.gui = gui
 
-    def update(self, message: str):
-        print(f"[{self.name} recibió] {message}")
+    def update(self, message_with_priority):
+        if isinstance(message_with_priority, tuple):
+            message, priority = message_with_priority
+        else:
+            message, priority = message_with_priority, "Media"
+        output = f"[{self.name} recibió] {message}"
+        with open("historial.txt", "a", encoding="utf-8") as f:
+            f.write(output + f" [Prioridad: {priority}]\n")
+        if self.gui:
+            self.gui.show_notification(output, priority)
+        else:
+            print(output)
 
 
 # --- Patrón Creacional Extra: Singleton ---
@@ -30,6 +41,7 @@ class NotificationManager:
     def subscribe(self, observer: Observer):
         self._instance._subscribers.append(observer)
 
-    def notify(self, message: str):
+    def notify(self, message_with_priority, sender):
         for obs in self._instance._subscribers:
-            obs.update(message)
+            if obs != sender:
+                obs.update(message_with_priority)

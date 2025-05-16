@@ -27,6 +27,15 @@ class SMSNotification(Notification):
         return f"SMS to {self.phone}: {self.text}"
 
 
+class PushNotification(Notification):
+    def __init__(self, device: str, text: str):
+        self.device = device
+        self.text = text
+
+    def get_content(self) -> str:
+        return f"Push to {self.device}: {self.text}"
+
+
 class NotificationFactory:
     @staticmethod
     def create_notification(kind: str, target: str, text: str) -> Notification:
@@ -34,6 +43,8 @@ class NotificationFactory:
             return EmailNotification(target, text)
         elif kind == "sms":
             return SMSNotification(target, text)
+        elif kind == "push":
+            return PushNotification(target, text)
         else:
             raise ValueError("The Tardis doesn't have this kind on its database.")
 
