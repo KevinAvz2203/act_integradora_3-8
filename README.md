@@ -54,6 +54,10 @@ Se implementó `TimestampDecorator` que añade la fecha y hora a la notificació
 
 ---
 
+![Working_App](images/working_app.png)
+
+---
+
 ## Diagrama de Clases (UML)
 
 ```mermaid
