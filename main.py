@@ -1,87 +1,124 @@
+import tkinter as tk
+
+from admin_gui import AdminGUI
+from gui import NotificationGUI
 from notification import NotificationFactory, TimestampDecorator
 from observer import Subscriber, NotificationManager
-from gui import NotificationGUI
-from admin_gui import AdminGUI
-import threading
 
-usuarios_activos = {}
+active_users = {}
 
 
-def crear_usuario(nombre, tipo, destino, on_user_update):
+def create_user(name, type, receiver, on_user_update, master):
+    """
+    Creates a new user, their GUI, and subscribes them to the NotificationManager.
+
+    Args:
+        name (str): The user's name.
+        type (str): The notification type.
+        receiver (str): The notification receiver.
+        on_user_update (callable): Callback to update users.
+        master (tk.Tk): The main Tkinter window.
+    """
     manager = NotificationManager()
 
-    def on_send(mensaje, prioridad, adjunto):
-        notification = NotificationFactory.create_notification(tipo, destino, mensaje)
+    def on_send(message, priority, attachment):
+        """
+        Sends a notification through the NotificationManager.
+
+        Args:
+            message (str): The message to send.
+            priority (str): The message priority.
+            attachment (str): Optional attachment.
+        """
+        notification = NotificationFactory.create_notification(type, receiver, message)
         notification = TimestampDecorator(notification)
-        contenido = notification.get_content()
-        if adjunto:
-            contenido += f" [Adjunto: {adjunto}]"
+        content = notification.get_content()
+        if attachment:
+            content += f" [Attachment: {attachment}]"
         for sub in manager._instance._subscribers:
-            if sub.name == nombre:
+            if sub.name == name:
                 sender = sub
                 break
         else:
             sender = None
         if sender:
-            manager.notify((contenido, prioridad), sender=sender)
+            manager.notify((content, priority), sender=sender)
 
-    gui = NotificationGUI(f"Terminal de {nombre}", on_send)
-    usuario = Subscriber(nombre, gui)
-    manager.subscribe(usuario)
-    usuarios_activos[nombre] = (usuario, gui)
-    gui.run()
-    del usuarios_activos[nombre]
-    manager._instance._subscribers.remove(usuario)
+    gui = NotificationGUI(f"Terminal de {name}", on_send, master=master)
+    user = Subscriber(name, gui)
+    manager.subscribe(user)
+    active_users[name] = (user, gui)
 
-
-def agregar_usuario(nombre, tipo, destino, on_user_update):
-    hilo = threading.Thread(
-        target=crear_usuario, args=(nombre, tipo, destino, on_user_update), daemon=True
+    gui.show_notification(
+        f"Welcome to the Tardis Group Chat!, it's great seeing you here {name}!",
+        "Media",
     )
-    hilo.start()
+
+    gui.run()
+    del active_users[name]
+    manager._instance._subscribers.remove(user)
 
 
-def eliminar_usuario(nombre, on_user_update=None):
-    if nombre in usuarios_activos:
-        usuario, gui = usuarios_activos[nombre]
+def add_user(name, type, receiver, on_user_update):
+    """
+    Adds a new user to the chat.
+
+    Args:
+        name (str): The user's name.
+        type (str): The notification type.
+        receiver (str): The notification receiver.
+        on_user_update (callable): Callback to update users.
+    """
+    create_user(name, type, receiver, on_user_update, root)
+
+
+def delete_user(name, on_user_update=None):
+    """
+    Removes an active user and closes their chat window.
+
+    Args:
+        name (str): The user's name to remove.
+        on_user_update (callable, optional): Callback to update users.
+    """
+    if name in active_users:
+        user, gui = active_users[name]
         try:
             gui.root.after(0, gui.root.destroy)
         except Exception:
-            pass  # Si ya está cerrada, ignora el error
+            pass
 
 
-def renombrar_usuario(old_name, new_name):
-    if old_name in usuarios_activos and new_name not in usuarios_activos:
-        usuario, gui = usuarios_activos[old_name]
-        usuario.name = new_name
-        gui.root.title(f"Terminal de {new_name}")
-        usuarios_activos[new_name] = usuarios_activos.pop(old_name)
+def rename_user(old_name, new_name):
+    """
+    Changes the name of an active user.
+
+    Args:
+        old_name (str): The user's current name.
+        new_name (str): The user's new name.
+    """
+    if old_name in active_users and new_name not in active_users:
+        user, gui = active_users[old_name]
+        user.name = new_name
+        gui.root.title(f"Chat window of {new_name}")
+        active_users[new_name] = active_users.pop(old_name)
 
 
-def obtener_nombres_usuarios():
-    return list(usuarios_activos.keys())
+def get_users_names():
+    """Returns a list of active user names."""
+    return list(active_users.keys())
 
 
 def main():
-    # Crea dos usuarios con sus propias ventanas
-    # usuarios = [
-    #     ("The Doctor", "sms", "+95475949"),
-    #     ("Clara Oswald", "email", "TheOncomingStorm@gallifrey.com"),
-    #     ("River Song", "push", "River's Tablet"),
-    # ]
-    # hilos = []
-    # for nombre, tipo, destino in usuarios:
-    #     hilo = threading.Thread(target=crear_usuario, args=(nombre, tipo, destino))
-    #     hilo.start()
-    #     hilos.append(hilo)
-    # for hilo in hilos:
-    #     hilo.join()
+    global root
+    root = tk.Tk()
+    root.withdraw()
 
     admin = AdminGUI(
-        agregar_usuario,
-        eliminar_usuario,
-        renombrar_usuario,
-        obtener_nombres_usuarios,
+        add_user,
+        delete_user,
+        rename_user,
+        get_users_names,
+        master=root,
     )
     admin.run()
 

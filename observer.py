@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 
-# --- Patrón Comportamiento: Observer ---
+# --- Design Pattern Comportamiento: Observer ---
 class Observer(ABC):
     @abstractmethod
     def update(self, message: str):
@@ -20,26 +19,26 @@ class Subscriber(Observer):
         else:
             message, priority = message_with_priority, "Media"
 
-        # Extrae el adjunto si existe
-        adjunto = None
-        if "[Adjunto:" in message:
-            start = message.find("[Adjunto:") + 9
+        # Use the attachment if it exists
+        attachment = None
+        if "[Attachment:" in message:
+            start = message.find("[Attachment:") + 9
             end = message.find("]", start)
-            adjunto = message[start:end].strip()
-            message = message.replace(f" [Adjunto: {adjunto}]", "")
+            attachment = message[start:end].strip()
+            message = message.replace(f" [Attachment: {attachment}]", "")
 
         output = f"[{self.name} recibió] {message}"
         with open("historial.txt", "a", encoding="utf-8") as f:
             f.write(output + f" [Prioridad: {priority}]\n")
         if self.gui:
             self.gui.root.after(
-                0, self.gui.show_notification, output, priority, adjunto
+                0, self.gui.show_notification, output, priority, attachment
             )
         else:
             print(output)
 
 
-# --- Patrón Creacional Extra: Singleton ---
+# --- Design Pattern Creacional Extra: Singleton ---
 class NotificationManager:
     _instance = None
 

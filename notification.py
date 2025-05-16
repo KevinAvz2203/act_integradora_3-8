@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import datetime
 
 
-# --- Patrón Creacional: Factory Method ---
+# --- Design Pattern Creacional: Factory Method ---
 class Notification(ABC):
     @abstractmethod
     def get_content(self) -> str:
@@ -46,10 +46,12 @@ class NotificationFactory:
         elif kind == "push":
             return PushNotification(target, text)
         else:
-            raise ValueError("The Tardis doesn't have this kind on its database.")
+            raise ValueError(
+                "The Tardis doesn't have this kind of message on its database."
+            )
 
 
-# --- Patrón Estructural: Decorator ---
+# --- Design Pattern Estructural: Decorator ---
 class NotificationDecorator(Notification):
     def __init__(self, wrapped: Notification):
         self._wrapped = wrapped
