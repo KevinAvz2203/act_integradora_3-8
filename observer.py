@@ -19,11 +19,22 @@ class Subscriber(Observer):
             message, priority = message_with_priority
         else:
             message, priority = message_with_priority, "Media"
+
+        # Extrae el adjunto si existe
+        adjunto = None
+        if "[Adjunto:" in message:
+            start = message.find("[Adjunto:") + 9
+            end = message.find("]", start)
+            adjunto = message[start:end].strip()
+            message = message.replace(f" [Adjunto: {adjunto}]", "")
+
         output = f"[{self.name} recibió] {message}"
         with open("historial.txt", "a", encoding="utf-8") as f:
             f.write(output + f" [Prioridad: {priority}]\n")
         if self.gui:
-            self.gui.show_notification(output, priority)
+            self.gui.root.after(
+                0, self.gui.show_notification, output, priority, adjunto
+            )
         else:
             print(output)
 

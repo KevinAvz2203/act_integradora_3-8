@@ -55,7 +55,7 @@ class AdminGUI:
         tipo = self.type_var.get()
         destino = self.dest_entry.get()
         if nombre and tipo and destino:
-            self.on_add_user(nombre, tipo, destino)
+            self.on_add_user(nombre, tipo, destino, self.refresh_users)
             self.name_entry.delete(0, tk.END)
             self.dest_entry.delete(0, tk.END)
             self.refresh_users()
@@ -64,8 +64,7 @@ class AdminGUI:
         selection = self.users_listbox.curselection()
         if selection:
             nombre = self.users_listbox.get(selection[0])
-            self.on_remove_user(nombre)
-            self.refresh_users()
+            self.on_remove_user(nombre, self.refresh_users)
 
     def rename_user(self):
         selection = self.users_listbox.curselection()
@@ -77,4 +76,9 @@ class AdminGUI:
             self.refresh_users()
 
     def run(self):
+        self._periodic_refresh()
         self.root.mainloop()
+
+    def _periodic_refresh(self):
+        self.refresh_users()
+        self.root.after(2000, self._periodic_refresh)

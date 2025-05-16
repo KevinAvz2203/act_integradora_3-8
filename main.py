@@ -7,12 +7,15 @@ import threading
 usuarios_activos = {}
 
 
-def crear_usuario(nombre, tipo, destino):
+def crear_usuario(nombre, tipo, destino, on_user_update):
     manager = NotificationManager()
 
-    def on_send(mensaje, prioridad):
+    def on_send(mensaje, prioridad, adjunto):
         notification = NotificationFactory.create_notification(tipo, destino, mensaje)
         notification = TimestampDecorator(notification)
+        contenido = notification.get_content()
+        if adjunto:
+            contenido += f" [Adjunto: {adjunto}]"
         for sub in manager._instance._subscribers:
             if sub.name == nombre:
                 sender = sub
@@ -20,30 +23,31 @@ def crear_usuario(nombre, tipo, destino):
         else:
             sender = None
         if sender:
-            manager.notify((notification.get_content(), prioridad), sender=sender)
+            manager.notify((contenido, prioridad), sender=sender)
 
     gui = NotificationGUI(f"Terminal de {nombre}", on_send)
     usuario = Subscriber(nombre, gui)
     manager.subscribe(usuario)
     usuarios_activos[nombre] = (usuario, gui)
     gui.run()
-    # Cuando la ventana se cierra, elimina el usuario
     del usuarios_activos[nombre]
     manager._instance._subscribers.remove(usuario)
 
 
-def agregar_usuario(nombre, tipo, destino):
+def agregar_usuario(nombre, tipo, destino, on_user_update):
     hilo = threading.Thread(
-        target=crear_usuario, args=(nombre, tipo, destino), daemon=True
+        target=crear_usuario, args=(nombre, tipo, destino, on_user_update), daemon=True
     )
     hilo.start()
 
 
-def eliminar_usuario(nombre):
+def eliminar_usuario(nombre, on_user_update=None):
     if nombre in usuarios_activos:
         usuario, gui = usuarios_activos[nombre]
-        gui.root.destroy()  # Cierra la ventana
-        # El usuario será eliminado de la lista en crear_usuario al cerrar la ventana
+        try:
+            gui.root.after(0, gui.root.destroy)
+        except Exception:
+            pass  # Si ya está cerrada, ignora el error
 
 
 def renombrar_usuario(old_name, new_name):
